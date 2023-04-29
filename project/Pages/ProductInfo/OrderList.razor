@@ -1,0 +1,67 @@
+﻿@page "/orderlist"
+
+@using project.Services
+@using project.Data
+@inject OrderService orderService
+@inject NavigationManager navigationManager
+<h3>Order Queue</h3>
+
+@if (orderList == null)
+{
+	<p><em>Loading...</em></p>
+}
+else
+{
+	<button class="btn btn-primary" @onclick="AddNewProduct">Order</button>
+		<table class="table table-striped">
+			<thead>
+				<tr>
+					<th>Order ID:</th>
+					<th>Customer Name:</th>
+					<th>Phone Number:</th>
+					<th>Pick-up Time:</th>
+					<th>Total amount due:(in CAD)</th>
+					<th>Order Date & Time:</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var prod in orderList)
+				{
+					<tr>
+						<td>@prod.ProdId</td>
+						<td>@prod.CustName</td>
+						<td>@prod.CustNum</td>
+						<td>@prod.PickupTime</td>
+						<td>@prod.OrderPrice</td>
+						<td>@prod.OrderTime</td>
+						<td>
+							<button class="btn btn-info" @onclick=@(() => UpdateProduct(prod))>Edit</button>
+							<button class="btn btn-info" @onclick=@(() => DeleteProduct(prod))>Delete</button>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+}
+@code {
+	private IEnumerable<ProductInfo> orderList;
+	protected override async Task OnInitializedAsync()
+	{
+		orderList = await orderService.GetProductAsync();
+	}
+	//Add
+	public void AddNewProduct()
+	{
+		navigationManager.NavigateTo("orderform");
+	}
+	public void UpdateProduct(ProductInfo prodInfo)
+	{
+		navigationManager.NavigateTo($"updateproduct/{prodInfo.ProdId}");
+	}
+	public async void DeleteProduct(ProductInfo prodInfo)
+	{
+		await orderService.DeleteProductAsync(prodInfo.ProdId);
+		orderList = await orderService.GetProductAsync();
+		this.StateHasChanged();
+	}
+}

@@ -1,0 +1,189 @@
+﻿@page "/orderform"	
+@page "/updateproduct/{ProductId:int}"
+
+@using project.Services
+@using project.Data
+@inject OrderService orderService
+@inject NavigationManager navigationManager
+
+<h3> Order Form </h3>
+
+<div class="row">
+	<div class="col-md-6">
+		<div class="mb-3">
+			<label class="form-label">Customer Name:</label>
+			<input type="text" @bind="customerName" class="form-control" placeholder="Customer Name" />
+		</div>
+		<div class="mb-3">
+			<label class="form-label">Customer Number:</label>
+			<input type="text" @bind="customerNum" class="form-control" placeholder="Customer Number" />
+		</div>
+		<div class="mb-3">
+			<label class="form-label">Pick-up Time:</label>
+			<input type="text" @bind="pickupTime" class="form-control" placeholder="From 9am to 10pm (Leave blank for ASAP)" />
+		</div>
+		<div class="mb-3">
+			<label class="form-label">Grand Total:</label>
+			<input type="text" @bind="orderPrice" class="form-control" placeholder="Grand Total Here" disabled/>
+		</div>
+		<button type="submit" class="btn btn-sm btn-success" @onclick="AddProductInfo">Order</button>
+		<button type="submit" class="btn btn-sm btn-info" @onclick="BackToList">To Orders List</button>
+	</div>
+	<div class="col-md-6">
+		<label>Food:</label><br>
+		<div class="row">
+			<div class="col-md-6">
+				<label>Deluxe Beef Burger: </label>		
+			</div>
+			<div class="col-md-6">
+				<input type="number" min="0" id="numericID" @bind="burgerqty" /> <br>
+			</div>
+			<div class="col-md-6">
+				<label>Spicy Noodles: </label>
+			</div>
+			<div class="col-md-6">
+				<input type="number" min="0" id="numericID" @bind="noodleqty" /> <br>
+			</div>
+			<div class="col-md-6">
+				<label>White Rice: </label>
+			</div>
+			<div class="col-md-6">
+				<input type="number" min="0" id="numericID" @bind="riceqty" /> <br>
+			</div>
+			<div class="col-md-6">
+				<label>Vegetable Soup: </label>
+			</div>
+			<div class="col-md-6">
+				<input type="number" min="0" id="numericID" @bind="soupqty" /> <br>
+			</div>
+			<div class="col-md-6">
+				<label>French Fries: </label>
+			</div>
+			<div class="col-md-6">
+				<input type="number" min="0" id="numericID" @bind="friesqty"/> <br>
+			</div>
+
+
+			<label>DRINKS:</label><br>
+			<div class="col-md-6">
+				<label>Coke: </label>
+			</div>
+			<div class="col-md-6">
+				<input type="number" min="0" id="numericID" @bind="cokeqty"/> <br>
+			</div>
+			<div class="col-md-6">
+				<label>Orange Crush: </label>
+			</div>
+			<div class="col-md-6">
+				<input type="number" min="0" id="numericID" @bind="crushqty" /> <br>
+			</div>
+			<div class="col-md-6">
+				<label>Lemon Sprite: </label>
+			</div>
+			<div class="col-md-6">
+				<input type="number" min="0" id="numericID" @bind="spriteqty" /> <br>
+			</div>
+			<div class="col-md-6">
+				<label>Brisk Iced Tea: </label>
+			</div>
+			<div class="col-md-6">
+				<input type="number" min="0" id="numericID" @bind="briskqty" /> <br>
+			</div>
+		</div>
+	</div>
+</div>
+@code {
+	[Parameter]
+	public int ProductId { get; set; }
+
+	private int productId = 0;
+	private string customerName = "";
+	private string customerNum = "";
+	private string pickupTime = "";
+	private double orderPrice;
+	DateTime orderTime;
+
+	public int burgerqty;
+	public int noodleqty;
+	public int riceqty;
+	public int soupqty;
+	public int friesqty;
+	public int cokeqty;
+	public int crushqty;
+	public int spriteqty;
+	public int briskqty;
+
+
+	const double burger = 5.00;
+	const double noodle = 8.00;
+	const double rice = 12.00;
+	const double soup = 5.00;
+	const double fries = 5.00;
+
+	const double coke = 2.00;
+	const double crush = 2.00;
+	const double sprite = 2.00;
+	const double brisk = 2.00;
+
+
+	protected async override void OnInitialized()
+	{
+		base.OnInitialized();
+		productId = ProductId;
+		if (productId > 0)
+		{
+			var response = await orderService.GetProductAsync(productId);
+			customerName = response.CustName;
+			customerNum = response.CustNum;
+			pickupTime = response.PickupTime;
+			orderPrice = response.OrderPrice;
+			orderTime = response.OrderTime;
+			this.StateHasChanged();
+		}
+	}
+
+	public async void AddProductInfo()
+	{
+		var prod = new ProductInfo();
+		prod.ProdId = productId;
+		prod.CustName = customerName;
+		prod.CustNum = customerNum;
+		prod.PickupTime = pickupTime;
+		prod.OrderPrice = CalculateTotal();
+		prod.OrderTime = DateTime.Now;
+
+		var response = await orderService.AddUpdateProductAsync(prod);
+		if (response)
+		{
+			if (productId == 0)
+			{
+				await App.Current.MainPage.DisplayAlert("Submitted", "Your order is successful \nPlease check the order queue.", "Done");
+			}
+			else
+			{
+				await App.Current.MainPage.DisplayAlert("Order Updated", "Order Update Success", "Done");
+			}
+		}
+		else
+		{
+			await App.Current.MainPage.DisplayAlert("Saved", "Save Order", "Done");
+		}
+	}
+	public void BackToList()
+	{
+		navigationManager.NavigateTo("orderlist");
+	}
+	public double CalculateTotal()
+	{
+		double totalburger = burger * burgerqty;
+		double totalnoodle = noodle * noodleqty;
+		double totalrice = rice * riceqty;
+		double totalsoup = soup * soupqty;
+		double totalfries = fries * friesqty;
+		double totalcoke = coke * cokeqty;
+		double totalcrush = crush * crushqty;
+		double totalsprite = sprite * spriteqty;
+		double totalbrisk = brisk * briskqty;
+		return orderPrice = totalburger + totalnoodle + totalrice + totalsoup + totalfries + totalcoke + totalcrush + totalsprite + totalbrisk;
+	}
+}
